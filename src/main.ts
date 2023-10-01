@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
-import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
+// import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import './style.css'
@@ -35,22 +35,21 @@ scene.add(ambientLight)
 // scene.add(floor)
 
 // Hit Test vars
-let hitTestSource: any | null = null;
-let hitTestSourceREquested: any | null = false;
+let hitTestSource: XRHitTestSource | null = null;
+let hitTestSourceREquested = false;
 // Meshes
 
-const cubeGeometry = new THREE.BoxGeometry(1, 1, 1).rotateX(-Math.PI / 2)
+const cubeGeometry = new THREE.BoxGeometry(1, 1, 1)
 const cubeMaterial = new THREE.MeshStandardMaterial({
   color: 'red',
-  visible: true
 
 })
 
 
 const reticle = new THREE.Mesh(
-  new THREE.RingGeometry(0.15, 0.2, 64),
+  new THREE.RingGeometry(0.4, 0.5, 64),
   new THREE.MeshStandardMaterial({
-    color: 'red',
+    color: 'white',
     visible: false,
 
   })
@@ -85,7 +84,6 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ["hit-test"] }))
 
 // get COntroller
-
 let controller = renderer.xr.getController(0)
 controller.addEventListener('select', onSelect)
 scene.add(controller)
@@ -95,7 +93,6 @@ function onSelect() {
     const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial)
     cubeMesh.position.setFromMatrixPosition(reticle.matrix);
     cubeMesh.name = 'cube'
-    cubeMesh.position.z = -3
     scene.add(cubeMesh)
   }
 }
@@ -118,17 +115,14 @@ const clock = new THREE.Clock();
 function tick(timeStamp: number, frame?: XRFrame) {
   if (frame) {
     const referenceSpace = renderer.xr.getReferenceSpace()
-    console.log(referenceSpace)
     const session = renderer.xr.getSession()
 
     if (session && hitTestSourceREquested == false) {
-      session.requestReferenceSpace('viewer').then((referenceSpace) => {
-        if (session) {
+      session.requestReferenceSpace('viewer').then((space) => {
+        session.requestHitTestSource!({ space: space })?.then((source) => {
+          hitTestSource = source
+        })
 
-          session.requestHitTestSource!({ space: referenceSpace })?.then((source) => {
-            hitTestSource = source
-          })
-        }
 
         hitTestSourceREquested = true
         session.addEventListener('end', () => {
@@ -159,8 +153,8 @@ function tick(timeStamp: number, frame?: XRFrame) {
       object.name == 'cube'
       object.rotation.y += 0.01
     })
-    renderer.render(scene, camera)
   }
+  renderer.render(scene, camera)
 
 }
 
